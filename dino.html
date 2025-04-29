@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dino Rescue: The Chrome Chronicles</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <style>
+  body {
+  background: #e4e3e1;
+}
+.touch-controls {
+  bottom: 4vw; /* or adjust as needed */
+}
+
+    html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: #222;
+  overflow-x: hidden;
+}
+
+#game {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #2d2e30;
+  position: relative;
+  overflow: hidden;
+}
+
+canvas {
+  width: 100vw !important;
+  height: 56vw !important; /* 16:9 ratio */
+  max-width: 100vw !important;
+  min-height: 60vw !important;
+  max-height: 100vh !important;
+  display: block;
+  margin: 0 auto;
+  background: linear-gradient(#e4e3e1 80%, #b7b6b5 100%);
+  border-radius: 0 !important;
+  touch-action: none;
+}
+@media (min-aspect-ratio: 16/9) {
+  canvas {
+    height: 100vh !important;
+    width: 177.77vh !important; /* 16/9 aspect */
+    min-height: 0 !important;
+  }
+}
+
+    }
+    .overlay {
+      position: absolute;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(40,36,30,0.86);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      z-index: 10;
+      border-radius: 12px;
+    }
+    button, .btn {
+      margin: 6px;
+      padding: 10px 28px;
+      background: #ffbd39;
+      color: #2a2301;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background .15s;
+      box-shadow: 0 2px 8px #0003;
+    }
+    button:hover, .btn:hover {
+      background: #ffe083;
+    }
+    .skin-list {
+      display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;
+    }
+    .skin-tile {
+      display: flex; flex-direction: column; align-items: center;
+      background: #292929;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin: 6px;
+      box-shadow: 0 1px 4px #0005;
+      cursor: pointer;
+    }
+    .skin-tile.locked {
+      opacity: 0.6;
+      pointer-events: none;
+      position: relative;
+    }
+    .skin-tile .lock {
+      position: absolute; left: 6px; top: 2px; color: #ff5c1b; font-size: 1.2rem;
+    }
+    .hud {
+      position: absolute; left: 12px; top: 6px; color: #222; font-size: 1.1rem;
+      display: flex; gap: 24px; align-items: center;
+      background: rgba(255,255,255,0.82);
+      border-radius: 8px;
+      padding: 8px 16px;
+      z-index: 2;
+      user-select: none;
+    }
+    .hud .icon { font-size: 1.2em; margin-right: 5px;}
+    .pause-btn {
+      position: absolute; top: 12px; right: 18px;
+      background: #fff2;
+      border: none;
+      font-size: 1.3em;
+      color: #222;
+      border-radius: 4px;
+      width: 39px; height: 39px;
+      cursor: pointer;
+      z-index: 3;
+    }
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      gap: 18px;
+      justify-content: center;
+      margin: 32px 0;
+    }
+    .level-cell {
+      background: #ffda73;
+      color: #222;
+      font-weight: bold;
+      font-size: 1rem;
+      width: 58px; height: 58px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      border: 3px solid #cfcfa3;
+      box-shadow: 0 1px 3px #0002;
+      transition: background .1s;
+    }
+    .level-cell.locked {
+      background: #b7b7b7;
+      color: #888;
+      border: 3px solid #999;
+      pointer-events: none;
+    }
+    .level-cell.current {
+      outline: 3px solid #ff7f1b;
+    }
+    .notes {
+      font-size: 1.1rem;
+      color: #ffeaa1;
+      margin: 14px 0 0 0;
+      padding: 0 12px;
+      text-align: center;
+    }
+    .touch-controls {
+      position: absolute;
+      left: 0; right: 0; bottom: 12px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      z-index: 12;
+      pointer-events: none;
+      user-select: none;
+    }
+    .touch-btn {
+      width: 56px; height: 56px;
+      margin: 0 10px;
+      background: #ffda73cc;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px #0004;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.1rem;
+      color: #222;
+      user-select: none;
+      border: 2.5px solid #ffeaa1;
+      pointer-events: auto;
+      touch-action: none;
+      transition: background .13s;
+    }
+    .touch-btn:active {
+      background: #ffd700;
+    }
+    @media (max-width: 900px) {
+      #game { width: 100vw !important; }
+    }
+    @media (max-width: 600px) {
+      #game { border-radius: 0 !important; box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div id="game" style="width:800px;">
+  <canvas id="gameCanvas" width="800" height="450"></canvas>
+  <div class="touch-controls" id="touchControls" style="display:none;">
+    <div class="touch-btn" id="btnLeft">&#8592;</div>
+    <div class="touch-btn" id="btnRight">&#8594;</div>
+    <div class="touch-btn" id="btnJump">&#8679;</div>
+  </div>
+  <div id="menu" class="overlay" style="display:none"></div>
+  <div id="hud" class="hud" style="display:none"></div>
+  <div id="cutscene" class="overlay" style="display:none"></div>
+  <div id="gameOver" class="overlay" style="display:none"></div>
+</div>
+<script>
+// ====== GAME CONSTANTS ======
+const GAME_WIDTH = 800, GAME_HEIGHT = 450;
+const GRAVITY = 0.85, JUMP_VEL = -12, MOVE_SPEED = 5;
+const DINO_SIZE = 38, GROUND_Y = GAME_HEIGHT-56;
+
+// ====== GAME STATE ======
+let state = 'splash'; // splash, menu, select, skins, play, pause, win, over, cutscene
+let gameLevel = 0;
+let unlockedLevel = 1;
+let coins = 0;
+let lives = 3;
+let score = 0;
+let dinoSkin = 'classic';
+let unlockedSkins = {classic: true};
+let cutsceneStep = 0, cutsceneCB = null;
+let notes = [
+  "You won't catch us, Dino!",
+  "Give up now, little lizard!",
+  "You're getting closer... but not close enough.",
+  "This is your last chance, turn back!"
+];
+let girlfriendRescued = false;
+
+// ====== DOM ELEMENTS ======
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const menu = document.getElementById('menu');
+const hud = document.getElementById('hud');
+const cutsceneDiv = document.getElementById('cutscene');
+const gameOverDiv = document.getElementById('gameOver');
+
+// ====== LEVEL DATA ======
+function platformLine(y, n, w, x0) {
+  // helper for repeated platforms
+  let arr=[];
+  for(let i=0;i<n;i++) arr.push([x0+i*w,y,w]);
+  return arr;
+}
+
+const levels = [];
+const themes = ['desert','volcano','forest','ice','city','lair'];
+for(let i=0;i<30;i++) {
+  let theme = themes[Math.floor(i/5)];
+  let baseY = GROUND_Y-(i%3)*30;
+  // Boss every 5th
+  let boss = (i+1)%5===0;
+  let note = boss ? notes[Math.floor(i/5)%notes.length] : null;
+
+  let platforms = [[0, GROUND_Y, 800]];
+  let coins = [], hearts = [], enemies = [], portal = [750,baseY-70];
+  // Varying platform layouts
+  if(!boss) {
+    for(let j=0;j<3+(i%3);j++)
+      platforms.push([120+j*160, baseY-60-30*j, 100]);
+    for(let c=0;c<3+(i%2);c++)
+      coins.push([150+c*180, baseY-90-25*c]);
+    if(i%4==0) hearts.push([400, baseY-110]);
+    if(i%2==0) enemies.push({x:320+i*6, y:GROUND_Y-18, type:'cactus', dir:0});
+  } else {
+    platforms.push([200,baseY-30,100], [450,baseY-80,100], [650,baseY-120,100]);
+    coins = [[230,baseY-50],[480,baseY-110],[680,baseY-150]];
+    hearts = [[400, baseY-100]];
+    enemies = [{x:360, y:GROUND_Y-30, type:'human', dir:1}];
+  }
+
+  levels.push({
+    theme, platforms, coins, hearts, enemies, portal, boss, note
+  });
+}
+
+// ====== SKINS ======
+const skinDefs = {
+  classic: {name:"Classic Dino", cost:0, color:"#38c245"},
+  ninja:   {name:"Ninja Dino", cost:10, color:"#292929"},
+  fire:    {name:"Fire Dino", cost:20, color:"#d7261e"},
+  robo:    {name:"Robo Dino", cost:30, color:"#9ba9b7"}
+};
+
+// ====== GAME OBJECTS ======
+let dino = {};
+let camX = 0;
+let objects = {platforms:[], coins:[], hearts:[], enemies:[], portal:null};
+let keys = {};
+let onGround = false;
+let jumpCount = 0;
+let allowJump = true;
+let frame = 0;
+let bossTimer = 0;
+let message = '';
+
+// ====== UTILITY ======
+function resetDino() {
+  dino = {
+    x: 60, y: 0, vx: 0, vy: 0, w: DINO_SIZE, h: DINO_SIZE,
+    skin: dinoSkin, alive: true
+  };
+  jumpCount = 0;
+  allowJump = true;
+}
+function aabb(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function rect(x,y,w,h,color) {
+  ctx.fillStyle = color; ctx.fillRect(x,y,w,h);
+}
+
+// ====== SCENES ======
+function showSplash() {
+  state = 'splash';
+  menu.innerHTML = `
+    <div>
+      <span style="font-size:2.8rem;color:#ffbd39;text-shadow:0 2px 9px #0008;">Dino Rescue</span><br>
+      <span style="font-size:1.7rem;color:#fff;">The Chrome Chronicles</span>
+      <br><br>
+      <button onclick="startGame()">START</button>
+      <br>
+      <span style="font-size:1rem;color:#ffeaa1;">A 2D Platformer Demo</span>
+    </div>
+  `;
+  menu.style.display = 'flex';
+  hud.style.display = 'none';
+  cutsceneDiv.style.display = 'none';
+  gameOverDiv.style.display = 'none';
+}
+function startGame() {
+  state = 'menu';
+  showMenu();
+}
+function showMenu() {
+  state = 'menu';
+  menu.innerHTML = `
+    <div>
+      <span style="font-size:2.2rem;color:#ffbd39;">Main Menu</span><br><br>
+      <button onclick="showLevelSelect()">Play</button>
+      <button onclick="showSkins()">Skins</button>
+      <button onclick="showHow()">How to Play</button>
+    </div>
+  `;
+  menu.style.display = 'flex';
+  hud.style.display = 'none';
+}
+function showHow() {
+  menu.innerHTML = `
+    <div>
+      <span style="font-size:2rem;color:#ffbd39;">How to Play</span><br><br>
+      <ul style="font-size:1.1rem;line-height:1.7;">
+        <li>Use <b>Left/Right</b> arrows or <b>A/D</b> to move.<br>Or use on-screen buttons on mobile.</li>
+        <li>Press <b>Space</b> or <b>Up/W</b> to jump.</li>
+        <li>Collect <b>coins</b> to unlock new skins.</li>
+        <li>Avoid enemies and hazards, reach the portal!</li>
+        <li>Hearts restore lives if you get hit.</li>
+      </ul>
+      <button onclick="showMenu()">Back</button>
+    </div>
+  `;
+}
+function showLevelSelect() {
+  state = 'select';
+  let html = `<div>
+    <span style="font-size:2rem;color:#ffbd39;">Select Level</span><br>
+    <div class="level-grid">`;
+  for(let i=0;i<30;i++) {
+    let locked = i+1 > unlockedLevel;
+    let cellClass = "level-cell"+(locked?" locked":"")+(i==gameLevel?" current":"");
+    html += `<div class="${cellClass}" onclick="loadLevel(${i})">${i+1}</div>`;
+  }
+  html += `</div>
+    <button onclick="showMenu()">Back</button>
+  </div>`;
+  menu.innerHTML = html;
+  menu.style.display = 'flex';
+}
+function showSkins() {
+  state = 'skins';
+  let html = `<div>
+    <span style="font-size:2rem;color:#ffbd39;">Dino Skins</span><br>
+    <div class="skin-list">`;
+  Object.entries(skinDefs).forEach(([k,v])=>{
+    let unlocked = unlockedSkins[k];
+    html += `<div class="skin-tile${unlocked?'':' locked'}" onclick="selectSkin('${k}')">
+      <div style="width:36px;height:36px;margin-bottom:8px;">
+        ${drawSkinSVG(k,36,36)}
+      </div>
+      <span>${v.name}</span>
+      ${unlocked?'':`<span class="lock">🔒<br>${v.cost} <span style="color:#ffd700;">🪙</span></span>`}
+      ${dinoSkin==k?'<div style="color:#ffda73;">Selected</div>':''}
+    </div>`;
+  });
+  html += `</div>
+    <div style="margin:10px 0;">
+      Coins: <span style="color:#ffd700;">🪙</span> <b>${coins}</b>
+    </div>
+    <button onclick="showMenu()">Back</button>
+  </div>`;
+  menu.innerHTML = html;
+  menu.style.display = 'flex';
+}
+function selectSkin(skin) {
+  if(unlockedSkins[skin]) {
+    dinoSkin = skin;
+    showSkins();
+    return;
+  }
+  let cost = skinDefs[skin].cost;
+  if(coins >= cost) {
+    coins -= cost;
+    unlockedSkins[skin] = true;
+    dinoSkin = skin;
+    showSkins();
+  }
+}
+function showCutscene(text, cb) {
+  state = 'cutscene';
+  cutsceneDiv.innerHTML = `<div>
+    <div style="margin-bottom:24px;">
+      <span style="font-size:1.7rem;color:#ffbd39;">${text}</span>
+    </div>
+    <button onclick="nextCutscene()">Continue</button>
+  </div>`;
+  cutsceneDiv.style.display = 'flex';
+  cutsceneCB = cb;
+}
+function nextCutscene() {
+  cutsceneDiv.style.display = 'none';
+  if(typeof cutsceneCB === 'function') cutsceneCB();
+}
+function showGameOver(win=false) {
+  state = win ? 'win' : 'over';
+  let msg = win ?
+    `<span style="font-size:2rem;color:#ffbd39;">Level Complete!</span><br>
+     <button onclick="nextLevel()">Next Level</button>` :
+    `<span style="font-size:2rem;color:#ff5c1b;">Game Over</span><br>
+     <button onclick="retryLevel()">Retry</button>`;
+  msg += `<br><button onclick="showMenu()">Menu</button>`;
+  gameOverDiv.innerHTML = `<div>${msg}</div>`;
+  gameOverDiv.style.display = 'flex';
+  hud.style.display = 'none';
+}
+function nextLevel() {
+  gameOverDiv.style.display = 'none';
+  if(gameLevel+1 < levels.length) {
+    loadLevel(gameLevel+1);
+  } else {
+    showCutscene("You've rescued your girlfriend!<br>Thanks for playing!", showMenu);
+  }
+}
+function retryLevel() {
+  gameOverDiv.style.display = 'none';
+  loadLevel(gameLevel);
+}
+
+// ====== LEVEL LOADER ======
+function loadLevel(i) {
+  if(i >= levels.length) return;
+  gameLevel = i;
+  score = 0;
+  lives = 3;
+  girlfriendRescued = false;
+  loadLevelCore(i);
+}
+function loadLevelCore(i) {
+  let level = levels[i];
+  // Setup objects
+  objects.platforms = level.platforms.map(([x,y,w])=>({x,y,w,h:22}));
+  objects.coins = level.coins.map(([x,y])=>({x,y,w:22,h:22,grab:false}));
+  objects.hearts = level.hearts.map(([x,y])=>({x,y,w:26,h:24,grab:false}));
+  objects.enemies = level.enemies.map(e=>Object.assign({},e,{w:30,h:36,alive:true}));
+  objects.portal = {x:level.portal[0],y:level.portal[1],w:32,h:44};
+  bossTimer = 0;
+  camX = 0;
+  resetDino();
+  // Cutscene if start of game
+  menu.style.display = 'none';
+  hud.style.display = 'flex';
+  updateHud();
+  if(i==0)
+    showCutscene("Dino & his girlfriend are together...<br>A human appears in a pickup truck!<br>She's kidnapped!", ()=>{
+      cutsceneDiv.style.display = 'none';
+      state = 'play';
+      requestAnimationFrame(gameLoop);
+    });
+  else if(level.boss && level.note)
+    showCutscene(level.note, ()=>{
+      cutsceneDiv.style.display = 'none';
+      state = 'play';
+      requestAnimationFrame(gameLoop);
+    });
+  else {
+    state = 'play';
+    requestAnimationFrame(gameLoop);
+  }
+}
+function updateHud() {
+  hud.innerHTML = `
+    <div><span class="icon">🦖</span> ${skinDefs[dinoSkin].name}</div>
+    <div><span class="icon">🪙</span> ${coins}</div>
+    <div><span class="icon">❤️</span> ${lives}</div>
+    <div><span class="icon">⭐</span> ${score}</div>
+  `;
+}
+
+// ====== GAME LOOP ======
+function gameLoop() {
+  if(state !== 'play') return;
+  frame++;
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// ====== GAME UPDATE ======
+function update() {
+  // Movement input
+  let left = keys['ArrowLeft']||keys['a']||keys['A'], right = keys['ArrowRight']||keys['d']||keys['D'];
+  dino.vx = 0;
+  if(left) dino.vx = -MOVE_SPEED;
+  if(right) dino.vx = MOVE_SPEED;
+  // Jump
+  if((keys[' ']||keys['ArrowUp']||keys['w']||keys['W']) && allowJump && (onGround || jumpCount<2)) {
+    dino.vy = JUMP_VEL;
+    jumpCount++; onGround = false; allowJump = false;
+  }
+  if(!(keys[' ']||keys['ArrowUp']||keys['w']||keys['W'])) allowJump=true;
+  // Apply physics
+  dino.x += dino.vx;
+  dino.vy += GRAVITY;
+  dino.y += dino.vy;
+  // Collision: platforms
+  onGround = false;
+  for(let p of objects.platforms) {
+    let px=p.x,py=p.y,pw=p.w,ph=p.h;
+    if(dino.x + dino.w > px && dino.x < px+pw) {
+      // landing
+      if(dino.y + dino.h > py && dino.y + dino.h - dino.vy <= py) {
+        dino.y = py - dino.h;
+        dino.vy = 0;
+        onGround = true;
+        jumpCount = 0;
+      }
+    }
+  }
+  // Boundaries
+  if(dino.y > GAME_HEIGHT-30) {
+    loseLife();
+    return;
+  }
+  if(dino.x < 0) dino.x = 0;
+  if(dino.x > GAME_WIDTH-38) dino.x = GAME_WIDTH-38;
+  // Camera
+  camX = Math.max(0, dino.x-240);
+  // Coins
+  for(let c of objects.coins) {
+    if(!c.grab && aabb(dino,c)) {
+      c.grab = true; coins++; score+=10;
+      unlockSkinsByCoins();
+      updateHud();
+    }
+  }
+  // Hearts
+  for(let h of objects.hearts) {
+    if(!h.grab && aabb(dino,h)) {
+      h.grab = true; lives = Math.min(lives+1, 5);
+      updateHud();
+    }
+  }
+  // Portal
+  if(aabb(dino,objects.portal)) {
+    // Level complete!
+    if(gameLevel+1>unlockedLevel) unlockedLevel = gameLevel+2;
+    showGameOver(true);
+    return;
+  }
+  // Enemies
+  for(let en of objects.enemies) {
+    if(!en.alive) continue;
+    // Move enemy
+    if(en.type=='cactus') continue;
+    if(en.type=='human') {
+      // boss: move left-right
+      bossTimer++;
+      if(bossTimer%80==0) en.dir *= -1;
+      en.x += en.dir*3.2;
+      if(en.x<200) {en.x=200;en.dir=1;}
+      if(en.x>GAME_WIDTH-90) {en.x=GAME_WIDTH-90;en.dir=-1;}
+    }
+    // Collide
+    if(aabb(dino,en)) {
+      loseLife();
+      return;
+    }
+  }
+}
+function unlockSkinsByCoins() {
+  Object.entries(skinDefs).forEach(([k,v])=>{
+    if(!unlockedSkins[k] && coins>=v.cost) unlockedSkins[k]=true;
+  });
+}
+
+// ====== LOSE LIFE ======
+function loseLife() {
+  lives--;
+  updateHud();
+  if(lives<=0) {
+    showGameOver(false);
+  } else {
+    resetDino();
+  }
+}
+
+// ====== DRAW GAME ======
+function draw() {
+  // Clear
+  ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+  // BG
+  drawBackground();
+  // Platforms
+  for(let p of objects.platforms) {
+    ctx.fillStyle = "#cdbf81";
+    ctx.fillRect(p.x-camX,p.y,p.w,p.h);
+    ctx.strokeStyle="#a48d45";ctx.strokeRect(p.x-camX,p.y,p.w,p.h);
+  }
+  // Portal
+  let portal=objects.portal;
+  ctx.save();
+  ctx.translate(portal.x-camX+16,portal.y+22);
+  ctx.rotate(Math.sin(frame*0.06)*0.12);
+  ctx.fillStyle="#7de0f7";
+  ctx.beginPath();
+  ctx.ellipse(0,0,16,22,0,0,2*Math.PI);
+  ctx.fill(); ctx.strokeStyle="#25bac8"; ctx.stroke();
+  ctx.restore();
+  ctx.font = "15px Segoe UI";
+  ctx.fillStyle="#2e7bcf";
+  ctx.fillText("Portal",portal.x-camX,portal.y-14);
+  // Coins
+  for(let c of objects.coins) if(!c.grab) {
+    ctx.save();
+    ctx.translate(c.x-camX+10,c.y+7);
+    ctx.rotate(Math.sin(frame*0.19+c.x)*0.85*0.09);
+    ctx.fillStyle="#ffd700";
+    ctx.beginPath();
+    ctx.arc(0,0,11,0,2*Math.PI); ctx.fill();
+    ctx.strokeStyle="#fff"; ctx.stroke();
+    ctx.restore();
+  }
+  // Hearts
+  for(let h of objects.hearts) if(!h.grab) {
+    drawHeart(h.x-camX,h.y,22,18);
+  }
+  // Enemies
+  for(let en of objects.enemies) if(en.alive) {
+    if(en.type=='cactus') drawCactus(en.x-camX,en.y,30,36);
+    if(en.type=='human') drawHuman(en.x-camX,en.y,30,36);
+  }
+  // Dino
+  drawDino(dino.x-camX,dino.y,DINO_SIZE,DINO_SIZE,dino.skin);
+  // HUD is handled in HTML
+}
+function drawBackground() {
+  // Theme by level
+  let theme = levels[gameLevel]?.theme||'desert';
+  if(theme=='desert') {
+    ctx.fillStyle="#f6e5b4";
+    ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+    for(let i=0;i<8;i++) {
+      ctx.fillStyle="#edc876";
+      ctx.beginPath();
+      ctx.arc(100+i*100,380+Math.sin(frame*0.01+i*1.4)*8, 42, 0, Math.PI, true);
+      ctx.fill();
+    }
+      // Sun
+    ctx.fillStyle="#fffdc6";
+    ctx.beginPath();
+    ctx.arc(700,80,45,0,2*Math.PI); ctx.fill();
+  } else if(theme=='volcano') {
+    ctx.fillStyle="#2a1113";
+    ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+    ctx.fillStyle="#2e181a";
+    ctx.fillRect(0,380,GAME_WIDTH,70);
+    ctx.fillStyle="#ec3b19";
+    ctx.beginPath();
+    ctx.arc(590,180,60,Math.PI,2*Math.PI);
+    ctx.fill();
+    ctx.fillStyle="#fc6d14";
+    ctx.beginPath();
+    ctx.arc(250,220,40,Math.PI,2*Math.PI);
+    ctx.fill();
+  } else if(theme=='forest') {
+    ctx.fillStyle="#b1f59d";
+    ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+    for(let i=0;i<7;i++) {
+      ctx.fillStyle="#2e8c2a";
+      ctx.beginPath();
+      ctx.arc(120+i*110,360+Math.sin(frame*0.01+i*2.1)*13, 60, 0, Math.PI, true);
+      ctx.fill();
+    }
+  } else if(theme=='ice') {
+    ctx.fillStyle="#e7f7fb";
+    ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+    ctx.fillStyle="#b2e0f7";
+    ctx.fillRect(0,380,GAME_WIDTH,70);
+    ctx.fillStyle="#72b8e3";
+    ctx.beginPath();
+    ctx.arc(200,150,35,0,2*Math.PI); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(600,170,32,0,2*Math.PI); ctx.fill();
+  } else if(theme=='city') {
+    ctx.fillStyle="#c7d3f3";
+    ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+    for(let i=0;i<7;i++) {
+      ctx.fillStyle="#7e8ebc";
+      ctx.fillRect(80+i*90,200+Math.sin(frame*0.03+i)*30, 48, 230);
+    }
+  } else if(theme=='lair') {
+    ctx.fillStyle="#3b2b4b";
+    ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+    ctx.fillStyle="#b51b5e";
+    ctx.beginPath();
+    ctx.arc(400,90,80,0,2*Math.PI); ctx.fill();
+    ctx.fillStyle="#5e1b9b";
+    ctx.fillRect(0,380,GAME_WIDTH,70);
+  }
+}
+
+// ====== DRAW DINO ======
+function drawDino(x,y,w,h,skin) {
+  let color = skinDefs[skin]?.color || "#38c245";
+  ctx.save();
+  ctx.translate(x+w/2,y+h/2);
+  ctx.scale(1,1);
+  // tail
+  ctx.beginPath();
+  ctx.moveTo(-w/2+6,10);
+  ctx.quadraticCurveTo(-w/2-10,8,-w/2+6,-2);
+  ctx.lineWidth=7;
+  ctx.strokeStyle=color; ctx.stroke();
+  // body
+  ctx.beginPath();
+  ctx.ellipse(0,8,17,15,0,0,2*Math.PI);
+  ctx.fillStyle=color; ctx.fill();
+  // head
+  ctx.beginPath();
+  ctx.ellipse(11,-8,9,11,0,0,2*Math.PI);
+  ctx.fillStyle=color; ctx.fill();
+  // eye
+  ctx.beginPath();
+  ctx.arc(16,-13,2,0,2*Math.PI); ctx.fillStyle="#000"; ctx.fill();
+  // mouth
+  ctx.beginPath();
+  ctx.arc(16,-7,3,0,Math.PI,false);
+  ctx.strokeStyle="#000"; ctx.lineWidth=1; ctx.stroke();
+  // arms
+  ctx.strokeStyle="#432"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(-2,8); ctx.lineTo(-12,18); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(7,11); ctx.lineTo(20,19); ctx.stroke();
+  // legs
+  ctx.beginPath(); ctx.moveTo(-5,22); ctx.lineTo(-7,32); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(7,22); ctx.lineTo(9,32); ctx.stroke();
+  ctx.restore();
+}
+function drawSkinSVG(skin,w,h) {
+  let color = skinDefs[skin]?.color || "#38c245";
+  return `
+  <svg width="${w}" height="${h}">
+    <ellipse cx="${w/2}" cy="${h*0.65}" rx="${w/2.2}" ry="${h/2.4}" fill="${color}" />
+    <ellipse cx="${w/2+10}" cy="${h*0.22}" rx="${w/5}" ry="${h/5}" fill="${color}" />
+    <circle cx="${w/2+14}" cy="${h*0.14}" r="${w/20}" fill="#000"/>
+  </svg>`;
+}
+// ====== DRAW ENEMIES ======
+function drawCactus(x,y,w,h) {
+  ctx.save();
+  ctx.fillStyle="#2e9f2b";
+  ctx.beginPath();
+  ctx.moveTo(x+w/2,y+h); // base
+  ctx.lineTo(x+w/2-10,y+h-26);
+  ctx.lineTo(x+w/2+10,y+h-26);
+  ctx.closePath(); ctx.fill();
+  ctx.fillRect(x+w/2-8,y+h-26,16,18);
+  ctx.restore();
+}
+function drawHuman(x,y,w,h) {
+  ctx.save();
+  // body
+  ctx.fillStyle="#75512f";
+  ctx.fillRect(x+w/2-7,y+h-25,14,20);
+  // head
+  ctx.beginPath();
+  ctx.arc(x+w/2,y+h-34,8,0,2*Math.PI);
+  ctx.fillStyle="#f2c089"; ctx.fill();
+  // legs
+  ctx.strokeStyle="#75512f"; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(x+w/2-4,y+h-5); ctx.lineTo(x+w/2-4,y+h-15); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+w/2+4,y+h-5); ctx.lineTo(x+w/2+4,y+h-15); ctx.stroke();
+  // arms
+  ctx.beginPath(); ctx.moveTo(x+w/2-7,y+h-20); ctx.lineTo(x+w/2-17,y+h-35); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+w/2+7,y+h-20); ctx.lineTo(x+w/2+17,y+h-35); ctx.stroke();
+  ctx.restore();
+}
+function drawHeart(x,y,w,h) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x+w/2,y+h/2);
+  ctx.bezierCurveTo(x+w/2, y, x, y, x, y+h/2);
+  ctx.bezierCurveTo(x, y+h, x+w/2, y+h*1.1, x+w/2, y+h*1.3);
+  ctx.bezierCurveTo(x+w/2, y+h*1.1, x+w, y+h, x+w, y+h/2);
+  ctx.bezierCurveTo(x+w, y, x+w/2, y, x+w/2, y+h/2);
+  ctx.fillStyle="#ff3c6a"; ctx.fill();
+  ctx.strokeStyle="#fff"; ctx.stroke();
+  ctx.restore();
+}
+
+// ====== INPUT HANDLER ======
+window.addEventListener('keydown', e=>{
+  keys[e.key] = true;
+  if(state=='play' && e.key=='Escape') pauseGame();
+});
+window.addEventListener('keyup', e=>{
+  keys[e.key] = false;
+});
+function pauseGame() {
+  state = 'pause';
+  menu.innerHTML = `<div>
+    <span style="font-size:2rem;color:#ffbd39;">Paused</span><br>
+    <button onclick="resumeGame()">Resume</button>
+    <button onclick="showMenu()">Menu</button>
+    </div>`;
+  menu.style.display = 'flex';
+  hud.style.display = 'none';
+}
+function resumeGame() {
+  menu.style.display = 'none';
+  hud.style.display = 'flex';
+  state = 'play';
+  requestAnimationFrame(gameLoop);
+}
+
+// ====== INIT ======
+showSplash();
+
+// ====== PAUSE BUTTON ======
+let pauseBtn = document.createElement('button');
+pauseBtn.className = "pause-btn";
+pauseBtn.innerHTML = "⏸";
+pauseBtn.onclick = pauseGame;
+document.getElementById('game').appendChild(pauseBtn);
+pauseBtn.style.display = "none";
+function updatePauseBtn() {
+  pauseBtn.style.display = (state=='play')?"block":"none";
+}
+setInterval(updatePauseBtn,100);
+
+// ====== MOBILE TOUCH CONTROLS ======
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+function showTouchControls(show) {
+  document.getElementById('touchControls').style.display = show ? 'flex' : 'none';
+}
+function updateForMobile() {
+  showTouchControls(isMobile() && state === 'play');
+}
+setInterval(updateForMobile, 300);
+let btnLeft = document.getElementById('btnLeft');
+let btnRight = document.getElementById('btnRight');
+let btnJump = document.getElementById('btnJump');
+function touchKey(key, down) {
+  keys[key] = down;
+}
+['touchstart','mousedown'].forEach(evt=>{
+  btnLeft.addEventListener(evt, e=>{ e.preventDefault(); touchKey('ArrowLeft',true); });
+  btnRight.addEventListener(evt, e=>{ e.preventDefault(); touchKey('ArrowRight',true); });
+  btnJump.addEventListener(evt, e=>{ e.preventDefault(); touchKey(' ',true); });
+});
+['touchend','touchcancel','mouseup','mouseleave'].forEach(evt=>{
+  btnLeft.addEventListener(evt, e=>{ e.preventDefault(); touchKey('ArrowLeft',false); });
+  btnRight.addEventListener(evt, e=>{ e.preventDefault(); touchKey('ArrowRight',false); });
+  btnJump.addEventListener(evt, e=>{ e.preventDefault(); touchKey(' ',false); });
+});
+document.getElementById('game').addEventListener('touchmove', e => {
+  if(state==='play') e.preventDefault();
+}, {passive:false});
+</script>
+</body>
+</html>
